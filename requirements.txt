@@ -1,0 +1,19 @@
+# FarmBeats Sensor Data Collector Dependencies
+# Python packages required for sensor hardware communication
+# This is a minimal requirements file for the standalone sensor_data_collector.py application
+
+# Grove sensor library
+# Used for: ADC (soil moisture sensor) and Relay sensor
+grove.py
+
+# Seeed Studio sensor libraries
+# DHT11/DHT22 temperature and humidity sensor (air temperature/humidity)
+seeed-python-dht
+
+# DS18B20 one-wire temperature sensor (soil temperature)
+seeed-python-Ds18b20
+
+# SI115X sunlight sensor (UV, visible, IR light measurements)
+# Note: Package name is si114x but Python module is si115x
+seeed-python-si114x
+
