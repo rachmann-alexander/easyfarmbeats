@@ -85,7 +85,7 @@ class AirTemperatureHumiditySensor(BaseSensor):
             self.sensor = DHT(self.dht_type, self.dht_pin)
             self.init = True
         except Exception as e:
-            print(f"AirTemperatureHumiditySensor.setup: {e}")
+            logging.error(f"AirTemperatureHumiditySensor.setup: {e}")
             self.init = False
 
     def read(self):
@@ -112,7 +112,7 @@ class AirTemperatureHumiditySensor(BaseSensor):
                 self.setup()
             air_humidity, air_temperature = self.sensor.read()
         except Exception as e:
-            print(f"AirTemperatureHumiditySensor.read: {e}")
+            logging.error(f"AirTemperatureHumiditySensor.read: {e}")
             self.init = False
             air_humidity, air_temperature = self.null_value, self.null_value
         finally:
@@ -134,7 +134,7 @@ class SoilTemperatureSensor(BaseSensor):
             self.sensor = grove_ds18b20()
             self.init = True
         except Exception as e:
-            print(f"SoilTemperatureSensor.setup: {e}")
+            logging.error(f"SoilTemperatureSensor.setup: {e}")
             self.init = False
 
     def read(self):
@@ -145,7 +145,7 @@ class SoilTemperatureSensor(BaseSensor):
             soil_temperature, soil_tempF = self.sensor.read_temp
             soil_temperature = self.rolling_average(soil_temperature, self.measurements, 10)
         except Exception as e:
-            print(f"SoilTemperatureSensor.read: {e}")
+            logging.error(f"SoilTemperatureSensor.read: {e}")
             soil_temperature = self.null_value
             self.init = False
         finally:
@@ -168,7 +168,7 @@ class SoilMoistureSensor(BaseSensor):
             self.sensor = ADC()
             self.init = True
         except Exception as e:
-            print(f"SoilMoistureSensor.setup: {e}")
+            logging.error(f"SoilMoistureSensor.setup: {e}")
             self.init = False
 
     def read(self):
@@ -181,7 +181,7 @@ class SoilMoistureSensor(BaseSensor):
             soil_moisture = self.mapNum(soil_moisture, 2504, 1543, 0.00, 1.00)
             soil_moisture = self.rolling_average(soil_moisture, self.measurements, 20)
         except Exception as e:
-            print(f"SoilMoistureSensor.read: {e}")
+            logging.error(f"SoilMoistureSensor.read: {e}")
             soil_moisture = self.null_value
             self.init = False
         finally:
@@ -203,7 +203,7 @@ class SunlightSensor(BaseSensor):
             self.sensor = grove_si115x()
             self.init = True
         except Exception as e:
-            print(f"SunlightSensor.setup: {e}")
+            logging.error(f"SunlightSensor.setup: {e}")
             self.init = False
 
     def read(self):
@@ -216,7 +216,7 @@ class SunlightSensor(BaseSensor):
             sunlight_uv = self.rolling_average(sunlight_uv, self.measurements, 10)
             sunlight_ir = self.sensor.ReadIR
         except Exception as e:
-            print(f"SunlightSensor.read: {e}")
+            logging.error(f"SunlightSensor.read: {e}")
             sunlight_visible = self.null_value
             sunlight_uv = self.null_value
             sunlight_ir = self.null_value
@@ -241,7 +241,7 @@ class RelaySensor(BaseSensor):
             self.sensor = GroveRelay(self.relay_pin)
             self.init = True
         except Exception as e:
-            print(f"RelaySensor.setup: {e}")
+            logging.error(f"RelaySensor.setup: {e}")
             self.init = False
 
     def read(self):
@@ -251,7 +251,7 @@ class RelaySensor(BaseSensor):
                 self.setup()
             relay_state = self.sensor.read()
         except Exception as e:
-            print(f"RelaySensor.read: {e}")
+            logging.error(f"RelaySensor.read: {e}")
             self.init = False
             relay_state = self.null_value
         finally:
@@ -429,17 +429,39 @@ class CSVWriter:
 # LOGGER SETUP
 # ============================================================================
 
+# Module-level logger for use by sensor classes
+_sensor_logger = None
+
 def setup_logging(log_file='sensor_collector.log'):
     """Configure logging to file and console."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
-    return logging.getLogger(__name__)
+    global _sensor_logger
+    
+    # Clear any existing handlers to avoid duplicates
+    root_logger = logging.getLogger()
+    root_logger.handlers = []
+    
+    # Create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    # File handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+    
+    # Console handler (terminal)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+    
+    # Add handlers to root logger
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
+    
+    # Create module-level logger for sensor classes
+    _sensor_logger = logging.getLogger(__name__)
+    
+    return _sensor_logger
 
 
 # ============================================================================
